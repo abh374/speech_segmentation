@@ -21,10 +21,10 @@ n_samples = len(audio)		#number of samples in the audio
 
 w =  Windowing(type = 'hann')
 wl = sr/1000*25			#window length considering a window of 25ms
-overlap = sr/1000*10		#overlap between two consecutive windows 10ms
+overlap = sr/1000*15		#overlap between two consecutive windows 10ms
 
 
-spectrum = Spectrum(size = wl)
+spectrum = Spectrum(size=wl)
 energy = Energy()
 ener=[]
 
@@ -44,9 +44,13 @@ while fstop < n_samples:
 
 temp = np.array(ener)
 temp = temp.reshape(-1,1)		#clustering demands the matrix in certain fashion
-threshold = estimate_threshold_VAD(temp)	#threshold contains various GMM parametes
-print threshold.labels_
-						#use predict_proba(x) to evaluate posteriori
+threshold_gmm , threshold_cluster = estimate_threshold_VAD(temp)	#threshold contains various GMM parametes
+
+#use predict_proba(x) to evaluate posteriori
+
+#we will use the GMM to evaluate the VAD
+#this variable sores mean[0] < mean[1] of GMM 
+m = threshold_gmm.means_[0] < threshold_gmm.means_[1]
 
 spectogram = []			#this contains spectogram of all the frames
 spectogram1 = []		#this contaisn spectogram of only speech portions
@@ -57,12 +61,14 @@ while fstop < n_samples:
 	ener = [math.log10(energy(frame))]		#log of total energy is being taken
 	spec = spectrum(w(frame))
 
-	a = threshold.predict([ener])
-	print a
+	a = threshold_cluster.predict([ener])
+	b = threshold_gmm.predict_proba([ener])
+	print a , b
+	
 	spectogram.append(spec)
+
 	#write your code here to separate the two spectograms
-	#the one written below is hardcoded one
-	if(a[0] == 0):
+	if( (b[0][0] > b[0][1] and not(m)) or  (b[0][0] < b[0][1] and m)):
 		spectogram1.append(spec)
 
 	fstart = fstart + overlap

@@ -3,6 +3,7 @@ import cv2
 import math
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
+from sklearn import mixture
 
 def gen_spectogram_image(spec):
 	rows = len(spec)
@@ -39,10 +40,10 @@ def estimate_threshold_VAD(ener):
 	'''
 	N = 2
 
-	'''CV = 'full'
+	CV = 'full'
 	gmm = mixture.GaussianMixture(n_components = N , covariance_type = CV)
 	gmm.fit(ener)
-	'''
+
 
 	kmeans = KMeans(n_clusters = N , random_state = 0).fit(ener)
-	return kmeans
+	return gmm , kmeans
