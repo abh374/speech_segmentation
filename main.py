@@ -8,6 +8,7 @@ from pylab import plot, show, figure, imshow
 import matplotlib.pyplot as plt
 from custom_methods import *
 import math
+from skimage.transform import radon, iradon
 
 plt.rcParams['figure.figsize'] = (15, 6) # set plot sizes to something larger than default
 
@@ -95,7 +96,13 @@ while fstop < n_samples:
 
 for i in range (0, len(features)):
 	img = gen_spectogram_image(features[i])
+
+	projections = radon(img, theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]) #RADON Projections for each non silent part
+	plt.plot(projections)
+
 	cv2.imshow("asdf",img)
+	cv2.waitKey(0)
+	show()
 
 spectogram = np.array(spectogram)
 img = gen_spectogram_image(spectogram)
