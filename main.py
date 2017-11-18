@@ -16,6 +16,12 @@ sr = int(sys.argv[2])		#sampling rate of the audio
 
 loader=essentia.standard.MonoLoader(filename =fn ,sampleRate = sr)
 audio = loader()		#audio sequence
+
+#resample the audio to 16kHz
+rs = Resample(inputSampleRate = sr, outputSampleRate = 20000 , quality = 0)
+audio = rs(audio)
+sr = 20000
+
 n_samples = len(audio)		#number of samples in the audio
 
 w =  Windowing(type = 'hann')
@@ -53,8 +59,14 @@ m = threshold_gmm.means_[0] < threshold_gmm.means_[1]
 
 spectogram = []			#this contains spectogram of all the frames
 spectogram1 = []		#this contaisn spectogram of only speech portions
+features = []			#this contains the spectrum of voiced portion of speech in 
+				#in sliced fashion
+spectogram_temp = []
+wlf_silence = False		#stores whether or not last frame was silent
+
 fstart = 0
 fstop = fstart+wl
+
 while fstop < n_samples:
 	frame = audio[fstart:fstop]
 	ener = [math.log10(energy(frame))]		#log of total energy is being taken
@@ -62,17 +74,27 @@ while fstop < n_samples:
 
 	a = threshold_cluster.predict([ener])
 	b = threshold_gmm.predict_proba([ener])
-	print a , b
 	
 	spectogram.append(spec)
 
 	#write your code here to separate the two spectograms
 	if( (b[0][0] > b[0][1] and not(m)) or  (b[0][0] < b[0][1] and m)):
 		spectogram1.append(spec)
+		if(not(wlf_silent)):
+			spectogram_temp.append(spec)
+		wlf_silent = False
+	else :
+		wlf_silent = True
+		if(len(spectogram_temp) > 1):
+			features.append(spectogram_temp)
+		spectogram_temp = []
 
 	fstart = fstart + overlap
 	fstop = fstop + overlap
 
+for i in range (0, len(features)):
+	img = gen_spectogram_image(features[i])
+	cv2.imshow("asdf",img)
 
 spectogram = np.array(spectogram)
 img = gen_spectogram_image(spectogram)
