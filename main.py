@@ -14,9 +14,10 @@ plt.rcParams['figure.figsize'] = (15, 6) # set plot sizes to something larger th
 fn = sys.argv[1]		#audio file name
 sr = int(sys.argv[2])		#sampling rate of the audio
 
-loader=essentia.standard.MonoLoader(filename =fn ,sampleRate = sr)
+loader=essentia.standard.MonoLoader(filename =fn, sampleRate = sr )
 audio = loader()		#audio sequence
 n_samples = len(audio)		#number of samples in the audio
+
 
 w =  Windowing(type = 'hann')
 wl = sr/1000*25			#window length considering a window of 25ms
@@ -71,8 +72,28 @@ while fstop < n_samples:
 spectogram = np.array(spectogram)
 img = gen_spectogram_image(spectogram)
 img1 = gen_spectogram_image(spectogram1)
-cv2.imshow("all",img)
-cv2.imshow("speech",img1)
+
+height, width = img.shape[:2]
+img = np.rot90(img)
+
+
+plt.subplot(2 ,1, 1)
+plt.imshow(img)
+plt.title('COmpare')
+plt.ylabel('Spectrogram')
+plt.xlabel('Pixel')
+
+
+
+plt.subplot(2,1, 2)
+plt.plot(audio[:])
+plt.xlabel('time (s)')
+plt.ylabel('Amplitude')
+
+plt.show()
+
+#cv2.imshow("all",img)
+#cv2.imshow("speech",img1)
 cv2.waitKey(0)
 
 
