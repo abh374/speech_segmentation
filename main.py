@@ -83,15 +83,18 @@ height, width = img.shape[:2]
 img = np.rot90(img)
 
 
-plt.subplot(2 ,1, 1)
+plt.subplot(3 ,1, 1)
 plt.imshow(img)
 plt.title('COmpare')
 plt.ylabel('Spectrogram')
 plt.xlabel('Pixel')
 
+plt.subplot(3,1, 2)
+plt.imshow(np.rot90(img1))
+plt.xlabel('time (s)')
+plt.ylabel('Amplitude')
 
-
-plt.subplot(2,1, 2)
+plt.subplot(3,1, 3)
 plt.plot(audio[:])
 plt.xlabel('time (s)')
 plt.ylabel('Amplitude')
