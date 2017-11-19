@@ -10,7 +10,7 @@ from custom_methods import *
 import math
 from skimage.transform import radon, iradon
 
-plt.rcParams['figure.figsize'] = (15, 6) # set plot sizes to something larger than default
+#plt.rcParams['figure.figsize'] = (15, 6) # set plot sizes to something larger than default
 
 fn = sys.argv[1]		#audio file name
 sr = int(sys.argv[2])		#sampling rate of the audio
@@ -21,9 +21,9 @@ audio = loader()		#audio sequence
 #resample the audio to 16kHz
 if(sr>20000):
 
-	rs = Resample(inputSampleRate = sr, outputSampleRate = 20000 , quality = 0)
+	rs = Resample(inputSampleRate = sr, outputSampleRate = 16000 , quality = 0)
 	audio = rs(audio)
-	sr = 20000
+	sr = 16000
 
 n_samples = len(audio)		#number of samples in the audio
 
@@ -66,11 +66,12 @@ spectogram1 = []		#this contaisn spectogram of only speech portions
 features = []			#this contains the spectrum of voiced portion of speech in 
 				#in sliced fashion
 spectogram_temp = []
-wlf_silence = False		#stores whether or not last frame was silent
+wlf_silent = True		#stores whether or not last frame was silent
+
+trans_sample = []		#stores the transitioning samples speech->silence and vice-versa
 
 fstart = 0
 fstop = fstart+wl
-fstartarray = []
 while fstop < n_samples:
 	frame = audio[fstart:fstop]
 	ener = [math.log10(energy(frame))]		#log of total energy is being taken
@@ -84,24 +85,47 @@ while fstop < n_samples:
 	#write your code here to separate the two spectograms
 	if( (b[0][0] > b[0][1] and not(m)) or  (b[0][0] < b[0][1] and m)):
 		spectogram1.append(spec)
+
 		if(not(wlf_silent)):
 			spectogram_temp.append(spec)
 		wlf_silent = False
+
 	else :
 		wlf_silent = True
-		if(len(spectogram_temp) > 1):
+		if(len(spectogram_temp) > 0):
+
+			trans_sample.append(fstart-overlap)
+
 			features.append(spectogram_temp)
-			fstartarray.append(fstart)
 		spectogram_temp = []
+
 
 	fstart = fstart + overlap
 	fstop = fstop + overlap
 
+
+
+#merging the frames
+i = 0
+while ( i < len(features)-1):
+
+	diff = trans_sample[i+1]-trans_sample[i]
+	len_frame_ip1 = len(features[i+1])
+	n_sample_ip1 = 15*len_frame_ip1 + 10
+	if(diff - n_sample_ip1 < 16000):
+		features[i] = features[i] + features[i+1]
+		features.pop(i+1)
+		trans_sample.pop(i)
+	else:
+		i = i+1
+
+
+print trans_sample
 first = True
 
 corarray = [[],[],[],[],[],[],[]]
 for i in range (0, len(features)):
-	img = gen_spectogram_image(features[i])
+	img = np.array(features[i])
 
 	projections1 = radon(img, theta=[22.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
 	projections2 = radon(img, theta=[45]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
@@ -111,7 +135,7 @@ for i in range (0, len(features)):
 	projections6 = radon(img, theta=[135]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
 	projections7 = radon(img, theta=[157.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
 	
-	print "Current sample window: ", fstartarray[i]
+	print "Current sample window: ", trans_sample[i]
 	#print projections.shape
 	#plt.plot(projections)
 
@@ -124,14 +148,14 @@ for i in range (0, len(features)):
 		corr6 = np.corrcoef(a[5].T,projections6.T)
 		corr7 = np.corrcoef(a[6].T,projections7.T)
 
-		print corr1.mean(), np.median(corr1)
-		corarray[0].append(np.median(corr1))
-		corarray[1].append(np.median(corr2))
-		corarray[2].append(np.median(corr3))
-		corarray[3].append(np.median(corr4))
-		corarray[4].append(np.median(corr5))
-		corarray[5].append(np.median(corr6))
-		corarray[6].append(np.median(corr7))
+		print corr1
+		corarray[0].append( (corr1[0][1]))
+		corarray[1].append( (corr2[0][1]))
+		corarray[2].append( (corr3[0][1]))
+		corarray[3].append( (corr4[0][1]))
+		corarray[4].append( (corr5[0][1]))
+		corarray[5].append( (corr6[0][1]))
+		corarray[6].append( (corr7[0][1]))
 	a = np.stack((projections1,projections2,projections3,projections4,projections5,projections6,projections7))
 
 
@@ -169,7 +193,6 @@ plt.plot(corarray[0])
 plt.xlabel('window')
 plt.ylabel('correlation1')
 
-
 plt.subplot(10 , 1, 5)
 plt.plot(corarray[1])
 plt.xlabel('window')
@@ -204,8 +227,6 @@ plt.subplot(10, 1, 10)
 plt.plot(corarray[6])
 plt.xlabel('window')
 plt.ylabel('correlation7')
-
-
 plt.show()
 
 #cv2.imshow("all",img)
