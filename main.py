@@ -19,9 +19,11 @@ loader=essentia.standard.MonoLoader(filename =fn, sampleRate = sr )
 audio = loader()		#audio sequence
 
 #resample the audio to 16kHz
-rs = Resample(inputSampleRate = sr, outputSampleRate = 20000 , quality = 0)
-audio = rs(audio)
-sr = 20000
+if(sr>20000):
+
+	rs = Resample(inputSampleRate = sr, outputSampleRate = 20000 , quality = 0)
+	audio = rs(audio)
+	sr = 20000
 
 n_samples = len(audio)		#number of samples in the audio
 
@@ -68,7 +70,7 @@ wlf_silence = False		#stores whether or not last frame was silent
 
 fstart = 0
 fstop = fstart+wl
-
+fstartarray = []
 while fstop < n_samples:
 	frame = audio[fstart:fstop]
 	ener = [math.log10(energy(frame))]		#log of total energy is being taken
@@ -89,20 +91,54 @@ while fstop < n_samples:
 		wlf_silent = True
 		if(len(spectogram_temp) > 1):
 			features.append(spectogram_temp)
+			fstartarray.append(fstart)
 		spectogram_temp = []
 
 	fstart = fstart + overlap
 	fstop = fstop + overlap
 
+first = True
+
+corarray = [[],[],[],[],[],[],[]]
 for i in range (0, len(features)):
 	img = gen_spectogram_image(features[i])
 
-	projections = radon(img, theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]) #RADON Projections for each non silent part
-	plt.plot(projections)
+	projections1 = radon(img, theta=[22.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections2 = radon(img, theta=[45]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections3 = radon(img, theta=[67.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections4 = radon(img, theta=[90]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections5 = radon(img, theta=[112.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections6 = radon(img, theta=[135]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	projections7 = radon(img, theta=[157.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
+	
+	print "Current sample window: ", fstartarray[i]
+	#print projections.shape
+	#plt.plot(projections)
+
+	if(first is False):
+		corr1 = np.corrcoef(a[0].T,projections1.T)
+		corr2 = np.corrcoef(a[1].T,projections2.T)
+		corr3 = np.corrcoef(a[2].T,projections3.T)
+		corr4 = np.corrcoef(a[3].T,projections4.T)
+		corr5 = np.corrcoef(a[4].T,projections5.T)
+		corr6 = np.corrcoef(a[5].T,projections6.T)
+		corr7 = np.corrcoef(a[6].T,projections7.T)
+
+		print corr1.mean(), np.median(corr1)
+		corarray[0].append(np.median(corr1))
+		corarray[1].append(np.median(corr2))
+		corarray[2].append(np.median(corr3))
+		corarray[3].append(np.median(corr4))
+		corarray[4].append(np.median(corr5))
+		corarray[5].append(np.median(corr6))
+		corarray[6].append(np.median(corr7))
+	a = np.stack((projections1,projections2,projections3,projections4,projections5,projections6,projections7))
+
 
 	cv2.imshow("asdf",img)
 	cv2.waitKey(0)
-	show()
+	#show()
+	first = False
 
 spectogram = np.array(spectogram)
 img = gen_spectogram_image(spectogram)
@@ -112,21 +148,63 @@ height, width = img.shape[:2]
 img = np.rot90(img)
 
 
-plt.subplot(3 ,1, 1)
+plt.subplot(10 ,1, 1)
 plt.imshow(img)
 plt.title('COmpare')
 plt.ylabel('Spectrogram')
 plt.xlabel('Pixel')
 
-plt.subplot(3,1, 2)
+plt.subplot(10,1, 2)
 plt.imshow(np.rot90(img1))
 plt.xlabel('time (s)')
 plt.ylabel('Amplitude')
 
-plt.subplot(3,1, 3)
+plt.subplot(10,1, 3)
 plt.plot(audio[:])
 plt.xlabel('time (s)')
 plt.ylabel('Amplitude')
+
+plt.subplot(10 , 1, 4)
+plt.plot(corarray[0])
+plt.xlabel('window')
+plt.ylabel('correlation1')
+
+
+plt.subplot(10 , 1, 5)
+plt.plot(corarray[1])
+plt.xlabel('window')
+plt.ylabel('correlation2')
+
+
+plt.subplot(10, 1, 6)
+plt.plot(corarray[2])
+plt.xlabel('window')
+plt.ylabel('correlation3')
+
+
+plt.subplot(10, 1, 7)
+plt.plot(corarray[3])
+plt.xlabel('window')
+plt.ylabel('correlation4')
+
+
+plt.subplot(10, 1, 8)
+plt.plot(corarray[4])
+plt.xlabel('window')
+plt.ylabel('correlation5')
+
+
+plt.subplot(10 , 1, 9)
+plt.plot(corarray[5])
+plt.xlabel('window')
+plt.ylabel('correlation6')
+
+
+plt.subplot(10, 1, 10)
+plt.plot(corarray[6])
+plt.xlabel('window')
+plt.ylabel('correlation7')
+
 
 plt.show()
 
