@@ -166,7 +166,7 @@ for i in range(0,len(log_features)):
 		corr_mat_mean[j][i] =math.log(m[0])
 		corr_mat_std[i][j] = math.log(m[1])
 		corr_mat_std[j][i] = math.log(m[1])
-print corr_mat_std
+print corr_mat_mean
 plt.figure(figsize=(5,4))
 for i in range(0,len(features)):
 	plt.subplot(len(features),1,i+1)

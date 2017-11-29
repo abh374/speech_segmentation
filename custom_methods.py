@@ -154,3 +154,15 @@ def get_correlation(spec1 , spec2, dc=False):
 
 	return corr.mean()
 	'''
+
+
+def set_labels(mat):
+	rows = len(mat)
+	label = np.zeros((rows,rows))
+	for i in range(0,rows):
+		for j in range(0,rows):
+			if(mat[i][j] > -0.05):
+				label[i][j] = i
+			else:
+				label[i][j] = -1
+	return label
