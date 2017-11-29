@@ -49,7 +49,13 @@ while fstop < n_samples:
 	fstop = fstop + overlap
 
 
-#gen_energy_histogram(ener)		#draw and plot the histogram of energies
+'''
+hist = gen_energy_histogram(ener)		#draw and plot the histogram of energies
+plt.subplot(10 ,1, 1)
+plt.imshow(hist)
+show()
+'''
+
 
 temp = np.array(ener)
 temp = temp.reshape(-1,1)		#clustering demands the matrix in certain fashion
@@ -103,6 +109,21 @@ while fstop < n_samples:
 	fstart = fstart + overlap
 	fstop = fstop + overlap
 
+'''
+img1 = gen_spectogram_image(spectogram)
+img2 = gen_spectogram_image(spectogram1)
+plt.subplot(2,1, 1)
+plt.imshow(np.rot90(img1))
+plt.xlabel('time (s)')
+plt.ylabel('Amplitude')
+
+plt.subplot(2,1, 2)
+plt.imshow(np.rot90(img2))
+plt.xlabel('time (s)')
+plt.ylabel('Amplitude')
+plt.show()
+exit()
+'''
 
 
 #merging the frames
@@ -112,15 +133,50 @@ while ( i < len(features)-1):
 	diff = trans_sample[i+1]-trans_sample[i]
 	len_frame_ip1 = len(features[i+1])
 	n_sample_ip1 = 15*len_frame_ip1 + 10
-	if(diff - n_sample_ip1 < 16000):
+	if(diff - n_sample_ip1 < 24000):
 		features[i] = features[i] + features[i+1]
 		features.pop(i+1)
 		trans_sample.pop(i)
 	else:
 		i = i+1
 
+'''
+for i in range(0, len(features)):
+	cv2.imshow("adf",gen_spectogram_image(features[i]))
+	cv2.waitkey(0)
+'''
 
-print trans_sample
+
+print np.array(trans_sample)/16000.0,len(features)
+
+log_features = []
+for i in features:
+	log_features.append(get_log_image(i))
+
+corr_mat_mean = np.zeros((len(features),len(features)))
+corr_mat_std = np.zeros((len(features),len(features)))
+for i in range(0,len(log_features)):
+	for j in range(i , len(log_features)):
+		if(i == j ):
+			corr_mat_mean[i][j] = 0.0
+			corr_mat_std[i][j] = 0.0
+			continue
+		m = get_correlation(log_features[i],log_features[j],dc=True)		#return [mean , std ] of correlations
+		corr_mat_mean[i][j] = math.log(m[0])
+		corr_mat_mean[j][i] =math.log(m[0])
+		corr_mat_std[i][j] = math.log(m[1])
+		corr_mat_std[j][i] = math.log(m[1])
+print corr_mat_std
+plt.figure(figsize=(5,4))
+for i in range(0,len(features)):
+	plt.subplot(len(features),1,i+1)
+	plt.plot(corr_mat_mean[i])
+	
+plt.show()
+
+
+exit()
+
 first = True
 
 corarray = [[],[],[],[],[],[],[]]
@@ -135,11 +191,22 @@ for i in range (0, len(features)):
 	projections6 = radon(img, theta=[135]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
 	projections7 = radon(img, theta=[157.5]) #RADON Projections for each non silent part || theta=[22.5, 45, 67.5, 90, 112.5, 135, 157.5]
 	
+	'''
+	projections1 = flatten(projections1)
+	projections2 = flatten(projections2)
+	projections3 = flatten(projections3)
+	projections4 = flatten(projections4)
+	projections5 = flatten(projections5)
+	projections6 = flatten(projections6)
+	projections7 = flatten(projections7)
+	'''
+
 	print "Current sample window: ", trans_sample[i]
 	#print projections.shape
 	#plt.plot(projections)
 
 	if(first is False):
+		print a[0],projections1
 		corr1 = np.corrcoef(a[0].T,projections1.T)
 		corr2 = np.corrcoef(a[1].T,projections2.T)
 		corr3 = np.corrcoef(a[2].T,projections3.T)
@@ -159,8 +226,6 @@ for i in range (0, len(features)):
 	a = np.stack((projections1,projections2,projections3,projections4,projections5,projections6,projections7))
 
 
-	cv2.imshow("asdf",img)
-	cv2.waitKey(0)
 	#show()
 	first = False
 
